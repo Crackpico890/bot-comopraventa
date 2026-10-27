@@ -1,0 +1,15 @@
+services:
+  bot-chollos:
+    build: .
+    container_name: bot-chollos
+    restart: always
+    env_file: .env
+    volumes:
+      - ./data:/app/data            # base de datos con el historial de precios
+      - ./config.yaml:/app/config.yaml:ro
+    mem_limit: 256m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
