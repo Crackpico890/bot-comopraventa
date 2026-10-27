@@ -85,13 +85,13 @@ products:
   - name: PS5 Slim
     query: ps5 slim
     must_include: [ps5|playstation 5, slim]
-    exclude: [juego, dualsense, portal, lector de disco, unidad de disco]
+    exclude: [juego, dualsense, portal, lector de disco, unidad de disco, vr, gafas, ssd, disco duro, auriculares, cascos, headset, ventilador, base de carga]
     min_price: 185
     max_price: 500
   - name: PS5
     query: playstation 5 consola
     must_include: [ps5|playstation 5]
-    exclude: [slim, pro, juego, dualsense, portal, digital edition cover, lector de disco, unidad de disco]
+    exclude: [slim, pro, juego, dualsense, portal, digital edition cover, lector de disco, unidad de disco, vr, gafas, ssd, disco duro, auriculares, cascos, headset, ventilador, base de carga]
     min_price: 170
     max_price: 450
   - name: Steam Deck OLED
@@ -109,7 +109,7 @@ products:
   - name: Xbox Series X
     query: xbox series x
     must_include: [series x]
-    exclude: [juego, series s]
+    exclude: [juego, series s, expansion, ssd, disco duro, auriculares, cascos, headset, ventilador]
     min_price: 170
     max_price: 450
   - name: Nintendo 3DS XL
