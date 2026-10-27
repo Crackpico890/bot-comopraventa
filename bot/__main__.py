@@ -174,6 +174,8 @@ class Bot:
 
 def main():
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+    # httpx registra cada URL en INFO, y la de Telegram lleva el token dentro.
+    logging.getLogger("httpx").setLevel(logging.WARNING)
     cfg = config_mod.load()
     asyncio.run(Bot(cfg).run())
 
