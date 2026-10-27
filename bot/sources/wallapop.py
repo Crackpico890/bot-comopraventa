@@ -59,6 +59,15 @@ class Wallapop:
                 break
         return results
 
+    async def details(self, item_id: str) -> Optional[dict]:
+        """Descripción completa y estado del anuncio (la búsqueda a veces la trae recortada)."""
+        r = await self.client.get(f"https://api.wallapop.com/api/v3/items/{item_id}", headers=HEADERS)
+        if r.status_code != 200:
+            return None
+        d = r.json()
+        return {"description": _text(d.get("description")), "title": _text(d.get("title")),
+                "condition": _condition(d)}
+
     async def is_gone(self, item_id: str) -> Optional[bool]:
         """True si el anuncio se ha vendido o borrado, None si no se puede saber."""
         r = await self.client.get(f"https://api.wallapop.com/api/v3/items/{item_id}", headers=HEADERS)
@@ -68,6 +77,19 @@ class Wallapop:
             return None
         flags = r.json().get("flags") or {}
         return bool(flags.get("sold") or flags.get("expired") or flags.get("banned"))
+
+
+def _condition(x: dict) -> str:
+    c = x.get("condition") or (x.get("type_attributes") or {}).get("condition") or ""
+    if isinstance(c, dict):
+        c = c.get("value") or c.get("text") or ""
+    return str(c)
+
+
+def _text(v) -> str:
+    if isinstance(v, dict):
+        return v.get("original") or v.get("translated") or v.get("text") or ""
+    return v or ""
 
 
 def _extract(data: dict):
@@ -108,7 +130,8 @@ def _parse(x: dict) -> Optional[Listing]:
             reserved=bool(reserved.get("flag", False)) if isinstance(reserved, dict) else bool(reserved),
             created_ts=(created / 1000 if created and created > 1e11 else created),
             extra={"lat": loc.get("latitude"), "lon": loc.get("longitude"),
-                   "category": x.get("category_id") or x.get("taxonomy")},
+                   "category": x.get("category_id") or x.get("taxonomy"),
+                   "condition": _condition(x)},
         )
     except (KeyError, TypeError, ValueError) as e:
         log.debug("anuncio wallapop ignorado: %s", e)

@@ -165,3 +165,23 @@ def test_full_products_with_extras_still_match():
     assert matches_product(L("MacBook Air M1 8GB 256GB SSD con cargador", 520), _product("MacBook Air M1"))
     assert matches_product(L("Meta Quest 3 128GB headset VR", 400), _product("Meta Quest 3"))
     assert matches_product(L("Nintendo Switch OLED con cargador y dock", 230), _product("Nintendo Switch OLED"))
+
+
+def test_defects_in_description():
+    ip = _product("iPhone 13 128GB")
+    desc = ("iPhone 13 de Apple 128 GB Color Beige\n\nBatería 68%\nCon funda\n"
+            "Hay un pequeño arañazo en la cristal de la cámara pero no afecta a la calidad de las fotos")
+    assert not matches_product(L("iPhone 13 128 GB Blanco", 139, desc), ip)   # anuncio real
+    assert not matches_product(L("iPhone 13 128GB", 300, "Salud de la batería: 79%"), ip)
+    assert not matches_product(L("iPhone 13 128GB", 300, "tiene un golpe en la esquina"), ip)
+    assert not matches_product(L("iPhone 13 128GB", 300, "pantalla cambiada, funciona bien"), ip)
+    # sin defectos (o negados) sigue entrando
+    assert matches_product(L("iPhone 13 128GB", 300, "Batería al 91%, sin arañazos ni golpes. Face ID perfecto"), ip)
+    assert matches_product(L("iPhone 13 128GB", 300, "Impecable, ni un rasguño. Más detalles por privado"), ip)
+
+
+def test_bad_condition_field():
+    ip = _product("iPhone 13 128GB")
+    l = L("iPhone 13 128GB", 300)
+    l.extra["condition"] = "has_given_it_all"
+    assert not matches_product(l, ip)

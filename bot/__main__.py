@@ -12,8 +12,8 @@ import httpx
 from . import config as config_mod
 from .models import Listing
 from .notifier import Telegram
-from .pricing import (evaluate, market_from_prices, matches_product, product_base_words,
-                      signature, sold_summary)
+from .pricing import (defect_reason, evaluate, market_from_prices, matches_product, normalize,
+                      product_base_words, signature, sold_summary)
 from .report import build_report, main_variant_prices
 from .sources.vinted import Vinted
 from .sources.wallapop import Wallapop
@@ -142,6 +142,8 @@ class Bot:
         if not market:
             return
         deal = evaluate(l, product, market, self.cfg, sold)
+        if deal and not await self.looks_perfect(l, product):
+            return
         if deal:
             log.info("%s: %s %.0f € -> +%.0f € (cat %s, %d iguales) %s", deal.level, l.title, l.price,
                      deal.profit, l.extra.get("category"), market.samples, l.url)
@@ -154,6 +156,25 @@ class Bot:
             self.alert_times.append(now)
             await self.tg.send_deal(deal)
             self.store.save_alert(deal)
+
+    async def looks_perfect(self, l, product) -> bool:
+        """Antes de avisar, lee el anuncio completo: si tiene defectos, no es un chollazo."""
+        src = self.sources.get(l.platform)
+        if not hasattr(src, "details"):
+            return True
+        try:
+            d = await src.details(l.item_id)
+        except (httpx.HTTPError, ValueError):
+            d = None
+        if d:
+            l.description = d["description"] or l.description
+            l.extra["condition"] = d["condition"] or l.extra.get("condition")
+        if not matches_product(l, product):
+            log.info("descartado al leer el anuncio completo: %s %s (%s)", l.title, l.url,
+                     defect_reason(normalize(l.title + " " + l.description)) or "filtros")
+            self.store.upsert(product["name"], l, False)
+            return False
+        return True
 
     async def check_sold(self):
         """Comprueba anuncios antiguos: si han desaparecido, cuentan como venta (precio y rapidez)."""

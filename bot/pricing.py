@@ -20,6 +20,41 @@ TITLE_EXCLUDE = [
     "volante", "pedales", "vr2", "tarjeta de memoria", "tarjeta de expansion",
     "amiibo", "figura", "steelbook", "coleccionista", "joystick",
 ]
+# Defectos: si aparecen en el título o la descripción (y no van negados: "sin arañazos"),
+# el anuncio no está "todo bien" y no cuenta ni para avisar ni para el precio de mercado.
+DEFECTS = [
+    "arañazo", "arañado", "arañada", "rasguño", "rayado", "rayada", "rayon", "raya",
+    "golpe", "golpeado", "golpeada", "abolladura", "abollado", "desconchado", "grieta",
+    "agrietado", "fisura", "mancha", "pixel muerto", "pixeles muertos", "quemado",
+    "pantalla cambiada", "pantalla no original", "pantalla reemplazada", "pieza desconocida",
+    "piezas no originales", "bateria cambiada", "bateria no original",
+    "drift", "no carga", "falla", "fallo", "a veces se", "desgaste",
+    "marcas de uso", "marca de uso", "tara", "defecto", "desperfecto",
+]
+NEGATIONS = {"sin", "ni", "ningun", "ninguna", "ninguno", "cero", "nunca", "no", "libre"}
+MIN_BATTERY = 85   # salud de batería mínima (%) cuando el anuncio la menciona
+BATTERY_RES = [
+    re.compile(r"bateria\D{0,25}?(\d{2,3})\s?%"),
+    re.compile(r"(\d{2,3})\s?%\s?(?:de\s)?(?:salud\s)?(?:de\s)?bateria"),
+]
+BAD_CONDITIONS = {"fair", "has_given_it_all", "aceptable", "lo ha dado todo"}
+
+
+def defect_reason(text: str) -> Optional[str]:
+    """Devuelve el primer defecto encontrado en el texto normalizado, o None si está todo bien."""
+    for rx in BATTERY_RES:
+        for m in rx.finditer(text):
+            pct = int(m.group(1))
+            if pct < MIN_BATTERY:
+                return f"batería {pct}%"
+    for word in DEFECTS:
+        for m in re.finditer(_pattern(word), text):
+            before = text[:m.start()].split()[-3:]
+            if not NEGATIONS & set(before):
+                return word
+    return None
+
+
 # Palabras de relleno al principio del título ("Vendo consola ...").
 LEADING_FILLER = {"vendo", "se", "vende", "consola", "oferta", "urge", "urgente", "ocasion",
                   "oportunidad", "rebajado", "rebajada", "rebaja", "apple", "nueva", "nuevo"}
@@ -29,7 +64,7 @@ TEXT_EXCLUDE = [
     "roto", "rota", "averiado", "averiada", "no funciona", "no enciende", "para piezas",
     "pantalla rota", "replica", "imitacion", "falso", "fake", "bloqueado", "bloqueada",
     "icloud", "leer descripcion", "sin probar", "a reparar", "para reparar",
-    "clon", "1:1", "aaa",
+    "clon", "1:1", "aaa", "sin face id", "sin true tone",
 ]
 
 
@@ -119,6 +154,10 @@ def matches_product(listing: Listing, product: dict) -> bool:
     for word in TEXT_EXCLUDE:
         if _contains(full, word):
             return False
+    if defect_reason(full):
+        return False
+    if normalize(listing.extra.get("condition") or "") in BAD_CONDITIONS:
+        return False
     lo, hi = product.get("min_price", 1), product.get("max_price", 100000)
     return lo <= listing.price <= hi
 
