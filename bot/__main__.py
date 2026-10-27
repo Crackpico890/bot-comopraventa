@@ -10,6 +10,7 @@ from zoneinfo import ZoneInfo
 import httpx
 
 from . import config as config_mod
+from .models import Listing
 from .notifier import Telegram
 from .pricing import (evaluate, market_from_prices, matches_product, product_base_words,
                       signature, sold_summary)
@@ -142,7 +143,8 @@ class Bot:
             return
         deal = evaluate(l, product, market, self.cfg, sold)
         if deal:
-            log.info("%s: %s %.0f € -> +%.0f € %s", deal.level, l.title, l.price, deal.profit, l.url)
+            log.info("%s: %s %.0f € -> +%.0f € (cat %s, %d iguales) %s", deal.level, l.title, l.price,
+                     deal.profit, l.extra.get("category"), market.samples, l.url)
             now = time.time()
             self.alert_times = [t for t in self.alert_times if now - t < 3600]
             if len(self.alert_times) >= self.cfg["rules"].get("max_alerts_per_hour", 3):
@@ -184,7 +186,16 @@ class Bot:
             self.last_report_day = now.date()
             await self.tg.send(build_report(self.store, self.cfg))
 
+    def revalidate(self):
+        """Si se han mejorado los filtros, lo guardado con los antiguos deja de contar."""
+        for p in self.cfg["products"]:
+            n = self.store.revalidate(
+                p["name"], lambda t, price, p=p: matches_product(Listing("", "", t, price, ""), p))
+            if n:
+                log.info("%s: %d anuncios guardados ya no pasan los filtros", p["name"], n)
+
     async def run(self):
+        self.revalidate()
         n = len(self.cfg["products"])
         plats = " y ".join(p.capitalize() for p in self.cfg.get("enabled_platforms", self.sources))
         await self.tg.send(f"🤖 Bot de chollos arrancado. Vigilando {n} productos en {plats}.")

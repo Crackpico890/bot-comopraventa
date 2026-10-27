@@ -107,7 +107,8 @@ def _parse(x: dict) -> Optional[Listing]:
             shipping=bool(shipping.get("user_allows_shipping", x.get("shipping_allowed", False))),
             reserved=bool(reserved.get("flag", False)) if isinstance(reserved, dict) else bool(reserved),
             created_ts=(created / 1000 if created and created > 1e11 else created),
-            extra={"lat": loc.get("latitude"), "lon": loc.get("longitude")},
+            extra={"lat": loc.get("latitude"), "lon": loc.get("longitude"),
+                   "category": x.get("category_id") or x.get("taxonomy")},
         )
     except (KeyError, TypeError, ValueError) as e:
         log.debug("anuncio wallapop ignorado: %s", e)

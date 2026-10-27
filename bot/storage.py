@@ -116,6 +116,15 @@ class Store:
             "SELECT COUNT(*) FROM listings WHERE product=? AND valid=1 AND first_seen>=?",
             (product, since)).fetchone()[0]
 
+    def revalidate(self, product: str, still_valid) -> int:
+        """Vuelve a pasar los filtros (solo título y precio) a lo ya guardado. Devuelve cuántos caen."""
+        rows = self.db.execute(
+            "SELECT key, title, price FROM listings WHERE product=? AND valid=1", (product,)).fetchall()
+        bad = [(key,) for key, title, price in rows if not still_valid(title, price)]
+        self.db.executemany("UPDATE listings SET valid=0 WHERE key=?", bad)
+        self.db.commit()
+        return len(bad)
+
     def already_alerted(self, key: str) -> bool:
         return self.db.execute("SELECT 1 FROM alerts WHERE key=?", (key,)).fetchone() is not None
 

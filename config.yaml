@@ -85,13 +85,13 @@ products:
   - name: PS5 Slim
     query: ps5 slim
     must_include: [ps5|playstation 5, slim]
-    exclude: [mando, juego, dualsense, portal, lector]
+    exclude: [juego, dualsense, portal, lector de disco, unidad de disco]
     min_price: 185
     max_price: 500
   - name: PS5
     query: playstation 5 consola
     must_include: [ps5|playstation 5]
-    exclude: [slim, pro, mando, juego, dualsense, portal, digital edition cover, lector]
+    exclude: [slim, pro, juego, dualsense, portal, digital edition cover, lector de disco, unidad de disco]
     min_price: 170
     max_price: 450
   - name: Steam Deck OLED
@@ -109,7 +109,7 @@ products:
   - name: Xbox Series X
     query: xbox series x
     must_include: [series x]
-    exclude: [mando, juego, series s]
+    exclude: [juego, series s]
     min_price: 170
     max_price: 450
   - name: Nintendo 3DS XL
@@ -120,7 +120,7 @@ products:
     max_price: 250
   - name: Game Boy Advance SP
     query: game boy advance sp
-    must_include: [sp]
+    must_include: [game boy advance|gameboy advance|gba, sp]
     exclude: [juego, cartucho]
     min_price: 35
     max_price: 200
@@ -161,7 +161,7 @@ products:
   - name: DJI Mini 3
     query: dji mini 3
     must_include: [mini 3]
-    exclude: [pro, helice, bateria, mando]
+    exclude: [pro, helice, bateria]
     min_price: 170
     max_price: 600
   - name: Meta Quest 3
