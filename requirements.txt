@@ -1,3 +1,4 @@
 httpx==0.28.1
 PyYAML==6.0.2
 tzdata==2024.2
+anthropic==2.3.0
