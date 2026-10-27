@@ -5,6 +5,8 @@ import httpx
 
 token = os.environ["TELEGRAM_TOKEN"]
 r = httpx.get(f"https://api.telegram.org/bot{token}/getUpdates", timeout=20).json()
+if not r.get("ok"):
+    raise SystemExit(f"Telegram rechaza el token: {r.get('description')}. Revisa TELEGRAM_TOKEN en .env")
 chats = {u["message"]["chat"]["id"]: u["message"]["chat"].get("first_name", "")
          for u in r.get("result", []) if "message" in u}
 if not chats:
