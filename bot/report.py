@@ -2,14 +2,23 @@
 import html
 
 from .notifier import eur
-from .pricing import market_from_prices, sold_summary
+from .pricing import market_from_prices, product_base_words, signature, sold_summary
+
+
+def main_variant_prices(store, product, days):
+    """Precios de la variante más anunciada (p. ej. la consola sola, usada)."""
+    base = product_base_words(product)
+    groups = {}
+    for _, title, price in store.comparables(product["name"], days):
+        groups.setdefault(signature(title, base), []).append(price)
+    return max(groups.values(), key=len) if groups else []
 
 
 def build_report(store, cfg) -> str:
     rows = []
     for p in cfg["products"]:
         name = p["name"]
-        m = market_from_prices(store.prices(name, cfg["market_window_days"]),
+        m = market_from_prices(main_variant_prices(store, p, cfg["market_window_days"]),
                                cfg["resale_percentile"], cfg["historic_percentile"])
         if not m:
             continue

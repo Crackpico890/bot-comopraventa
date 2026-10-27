@@ -14,6 +14,8 @@ def load(path: str = None) -> dict:
     enabled = cfg.get("enabled_platforms", ["wallapop", "vinted"])
     for p in cfg["products"]:
         p["platforms"] = [x for x in p.get("platforms", ["wallapop", "vinted"]) if x in enabled]
-        p.setdefault("must_include", [])
-        p.setdefault("exclude", [])
+        # YAML convierte [iphone 13, 128] en ["iphone 13", 128]: todo a texto.
+        p["must_include"] = [str(w) for w in p.get("must_include", [])]
+        p["exclude"] = [str(w) for w in p.get("exclude", [])]
+        p["query"] = str(p["query"])
     return cfg

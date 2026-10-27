@@ -11,8 +11,9 @@ import httpx
 
 from . import config as config_mod
 from .notifier import Telegram
-from .pricing import evaluate, market_from_prices, matches_product, sold_summary
-from .report import build_report
+from .pricing import (evaluate, market_from_prices, matches_product, product_base_words,
+                      signature, sold_summary)
+from .report import build_report, main_variant_prices
 from .sources.vinted import Vinted
 from .sources.wallapop import Wallapop
 from .storage import Store
@@ -44,6 +45,8 @@ class Bot:
         self.last_refresh = {}
         self.last_report_day = None
         self.alert_times = []
+        self.sold_stats = {name: [0, 0] for name in self.sources}   # [desaparecidos, comprobados]
+        self.sold_disabled = set()
 
     async def pause(self):
         lo, hi = self.cfg["request_delay_s"]
@@ -89,11 +92,10 @@ class Bot:
                 self.store.upsert(product["name"], l, valid)
                 if valid:
                     fresh.append(l)
-        m = self.market(product)
+        for l in fresh:
+            await self.consider(l, product)
+        m = self.market(product, main_variant_prices(self.store, product, self.cfg["market_window_days"]))
         if m:
-            sold14 = sold_summary(self.store.sold_stats(product["name"], 14))
-            for l in fresh:
-                await self.consider(l, product, m, sold14)
             sold = sold_summary(self.store.sold_stats(product["name"], 1))
             self.store.save_snapshot(product["name"], m, self.store.count_new(product["name"]),
                                      sold[2] if sold else 0)
@@ -101,9 +103,23 @@ class Bot:
                      product["name"], m.median, m.resale, m.samples)
         self.last_refresh[product["name"]] = time.time()
 
-    def market(self, product: dict):
-        return market_from_prices(self.store.prices(product["name"], self.cfg["market_window_days"]),
-                                  self.cfg["resale_percentile"], self.cfg["historic_percentile"])
+    def market(self, product: dict, prices=None):
+        if prices is None:
+            prices = self.store.prices(product["name"], self.cfg["market_window_days"])
+        return market_from_prices(prices, self.cfg["resale_percentile"], self.cfg["historic_percentile"])
+
+    def comparable_market(self, l, product: dict, exclude_key: str = None):
+        """Precio de mercado y ventas solo de anuncios de la MISMA variante que `l`."""
+        base = product_base_words(product)
+        sig = signature(l.title, base)
+        rows = self.store.comparables(product["name"], self.cfg["market_window_days"])
+        prices = [price for key, title, price in rows
+                  if key != exclude_key and signature(title, base) == sig]
+        sold_rows = [r for r in self.store.sold_stats(product["name"], 14)
+                     if signature(r[2], base) == sig]
+        if l.platform in self.sold_disabled:
+            sold_rows = []
+        return self.market(product, prices), sold_summary(sold_rows)
 
     async def scan(self, product: dict):
         name = product["name"]
@@ -111,19 +127,18 @@ class Bot:
             await self.refresh_market(product)
         for platform in product["platforms"]:
             listings = await self.fetch(platform, product, "newest", pages=1)
-            if not listings:
-                continue
-            market = self.market(product)
-            sold = sold_summary(self.store.sold_stats(name, 14))
-            for l in listings:
+            for l in listings or []:
                 valid = matches_product(l, product)
-                # Evaluamos antes de guardar para no contaminar el precio de mercado con el propio anuncio.
-                if valid and market:
-                    await self.consider(l, product, market, sold)
                 self.store.upsert(name, l, valid)
+                if valid:
+                    await self.consider(l, product)
 
-    async def consider(self, l, product, market, sold):
+    async def consider(self, l, product):
         if not self.is_reachable(l) or self.store.already_alerted(l.key):
+            return
+        # El propio anuncio no cuenta para calcular su precio de mercado.
+        market, sold = self.comparable_market(l, product, exclude_key=l.key)
+        if not market:
             return
         deal = evaluate(l, product, market, self.cfg, sold)
         if deal:
@@ -142,15 +157,25 @@ class Bot:
         """Comprueba anuncios antiguos: si han desaparecido, cuentan como venta (precio y rapidez)."""
         for platform, src in self.sources.items():
             if platform not in self.cfg.get("enabled_platforms", self.sources) \
+                    or platform in self.sold_disabled \
                     or time.time() < self.paused_until[platform]:
                 continue
             for key in self.store.to_check(platform, self.cfg["sold_checks_per_cycle"]):
                 try:
                     gone = await src.is_gone(key.split(":", 1)[1])
-                except httpx.HTTPError:
+                except (httpx.HTTPError, ValueError):
                     gone = None
                 if gone is not None:
                     self.store.checked(key, gone)
+                    stats = self.sold_stats[platform]
+                    stats[0] += int(gone)
+                    stats[1] += 1
+                    # Si casi todo sale "vendido", la comprobación no funciona: mejor no usarla.
+                    if stats[1] >= 40 and stats[0] / stats[1] > 0.9:
+                        log.warning("%s: %d de %d anuncios salen como vendidos; se desactiva la "
+                                    "detección de ventas", platform, stats[0], stats[1])
+                        self.sold_disabled.add(platform)
+                        break
                 await self.pause()
 
     async def maybe_report(self):
