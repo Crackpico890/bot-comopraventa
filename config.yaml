@@ -22,6 +22,8 @@ daily_report_hour: 21    # hora del informe diario de mercado (hora de Madrid)
 
 rules:
   only_chollazos: true        # true = solo avisa de chollazos históricos
+  min_discount: 0.35          # al menos un 35 % más barato que la mediana del mercado
+  max_alerts_per_hour: 3      # freno de seguridad: nunca más de 3 avisos por hora
   min_samples: 20             # mínimo de anuncios comparables para fiarse del precio
   min_sold_samples: 5         # ventas detectadas para usar el precio real de venta
   max_days_to_sell: 10        # si tarda más en venderse, no interesa
@@ -98,9 +100,9 @@ products:
     exclude: [funda, dock]
     min_price: 215
     max_price: 600
-  - name: Steam Deck LCD
-    query: steam deck
-    must_include: [steam deck]
+  - name: Steam Deck LCD 512GB
+    query: steam deck 512gb
+    must_include: [steam deck, 512]
     exclude: [oled, funda, dock]
     min_price: 130
     max_price: 450
@@ -122,30 +124,28 @@ products:
     exclude: [juego, cartucho]
     min_price: 35
     max_price: 200
-
-  # --- Apple ---
   - name: iPhone 13 128GB
     query: iphone 13 128gb
     must_include: [iphone 13, 128]
     exclude: [mini, pro]
     min_price: 130
     max_price: 400
-  - name: iPhone 13 Pro
-    query: iphone 13 pro
-    must_include: [iphone 13 pro]
+  - name: iPhone 13 Pro 128GB
+    query: iphone 13 pro 128gb
+    must_include: [iphone 13 pro, 128]
     exclude: [max]
     min_price: 185
     max_price: 500
   - name: iPhone 14
     query: iphone 14 128gb
-    must_include: [iphone 14]
+    must_include: [iphone 14, 128]
     exclude: [pro, plus]
     min_price: 185
     max_price: 500
   - name: iPad 9 generacion
     query: ipad 9 generacion
-    must_include: [ipad]
-    exclude: [pro, air, mini]
+    must_include: [ipad, 9|9a|novena]
+    exclude: [pro, air, mini, 10, 10a]
     min_price: 100
     max_price: 300
   - name: MacBook Air M1
@@ -153,8 +153,6 @@ products:
     must_include: [macbook air, m1]
     min_price: 255
     max_price: 650
-
-  # --- Electrónica y hogar ---
   - name: GoPro Hero 11
     query: gopro hero 11
     must_include: [gopro, 11]
@@ -163,7 +161,7 @@ products:
   - name: DJI Mini 3
     query: dji mini 3
     must_include: [mini 3]
-    exclude: [helice, bateria, mando]
+    exclude: [pro, helice, bateria, mando]
     min_price: 170
     max_price: 600
   - name: Meta Quest 3
@@ -172,32 +170,3 @@ products:
     exclude: [3s, correa, lentes]
     min_price: 215
     max_price: 550
-
-  # --- Coleccionismo (muy líquido en Vinted) ---
-  - name: Lego Star Wars sellado
-    query: lego star wars nuevo precintado
-    must_include: [lego, precintado|sellado|nuevo|sin abrir]
-    exclude: [minifigura, figura, compatible, montado]
-    min_price: 35
-    max_price: 400
-  - name: Pokemon caja sellada (ETB/booster box)
-    query: pokemon elite trainer box
-    must_include: [pokemon, etb|elite trainer|booster box|caja de sobres]
-    exclude: [vacia, abierta, proxy]
-    min_price: 35
-    max_price: 400
-
-  # --- Ropa y zapatillas (Vinted) ---
-  - name: Nike Dunk Low
-    query: nike dunk low
-    must_include: [dunk]
-    exclude: [nino, niño, replica]
-    min_price: 35
-    max_price: 200
-    platforms: [vinted, wallapop]
-  - name: The North Face Nuptse
-    query: north face nuptse
-    must_include: [nuptse]
-    exclude: [replica, niño]
-    min_price: 50
-    max_price: 300

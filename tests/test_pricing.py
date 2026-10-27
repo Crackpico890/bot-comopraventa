@@ -63,3 +63,10 @@ def test_over_budget_ignored():
 def test_scam_warning():
     deal = evaluate(L("Nintendo Switch OLED", 60), SWITCH, market(), CFG)
     assert deal and deal.suspicious
+
+
+def test_small_discount_ignored():
+    # Mucho "beneficio" sobre el papel pero apenas más barato que el mercado: no es un chollazo.
+    cfg = dict(CFG, rules=dict(CFG["rules"], min_discount=0.35))
+    m = market()
+    assert evaluate(L("Nintendo Switch OLED", m.median * 0.7), SWITCH, m, cfg) is None

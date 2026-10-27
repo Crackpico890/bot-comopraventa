@@ -43,6 +43,7 @@ class Bot:
         self.paused_until = {name: 0.0 for name in self.sources}
         self.last_refresh = {}
         self.last_report_day = None
+        self.alert_times = []
 
     async def pause(self):
         lo, hi = self.cfg["request_delay_s"]
@@ -126,7 +127,14 @@ class Bot:
             return
         deal = evaluate(l, product, market, self.cfg, sold)
         if deal:
-            log.info("%s: %s %.0f € -> +%.0f €", deal.level, l.title, l.price, deal.profit)
+            log.info("%s: %s %.0f € -> +%.0f € %s", deal.level, l.title, l.price, deal.profit, l.url)
+            now = time.time()
+            self.alert_times = [t for t in self.alert_times if now - t < 3600]
+            if len(self.alert_times) >= self.cfg["rules"].get("max_alerts_per_hour", 3):
+                # Demasiados avisos seguidos suele ser señal de un precio de mercado mal calculado.
+                log.warning("límite de avisos por hora alcanzado, no se envía: %s", l.url)
+                return
+            self.alert_times.append(now)
             await self.tg.send_deal(deal)
             self.store.save_alert(deal)
 

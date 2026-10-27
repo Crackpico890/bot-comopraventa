@@ -152,6 +152,8 @@ def evaluate(listing: Listing, product: dict, market: Market, cfg: dict,
         return None
     if profit < rules["min_profit_eur"] or profit_pct < rules["min_profit_pct"]:
         return None
+    if discount_pct < rules.get("min_discount", 0):
+        return None
 
     suspicious = discount_pct >= rules["suspicious_discount"]
     # Chollazo histórico: mucho beneficio Y más barato que el 90 % de todo lo visto en el periodo.
