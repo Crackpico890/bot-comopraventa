@@ -10,14 +10,15 @@ from .models import Listing
 
 # Si aparecen en el título, el anuncio no es el producto completo (accesorio, compra, cambio...).
 TITLE_EXCLUDE = [
+    # "cargador" o "cable" no: "MacBook con cargador" es el producto completo, y un
+    # cargador suelto ya queda fuera por el precio mínimo.
     "busco", "compro", "cambio", "intercambio", "funda", "carcasa", "protector",
-    "cristal templado", "pegatina", "skin", "soporte", "cargador", "cable", "repuesto",
+    "cristal templado", "pegatina", "skin", "soporte", "repuesto",
     "caja vacia", "solo caja", "sin consola", "piezas", "despiece", "alquilo", "alquiler",
-    "reservado", "lote de juegos", "solo mando",
+    "reservado", "lote de juegos", "solo mando", "solo cargador",
     # accesorios y juegos que llevan el nombre de la consola en el título
-    "volante", "pedales", "vr2", "tarjeta de memoria", "tarjeta de expansion", "expansion",
-    "disco duro", "ssd", "auriculares", "cascos", "headset", "teclado", "raton", "amiibo",
-    "figura", "steelbook", "coleccionista", "dualsense", "joystick", "grip", "ventilador",
+    "volante", "pedales", "vr2", "tarjeta de memoria", "tarjeta de expansion",
+    "amiibo", "figura", "steelbook", "coleccionista", "joystick",
 ]
 # Palabras de relleno al principio del título ("Vendo consola ...").
 LEADING_FILLER = {"vendo", "se", "vende", "consola", "oferta", "urge", "urgente", "ocasion",

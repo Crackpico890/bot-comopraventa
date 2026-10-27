@@ -159,3 +159,9 @@ def test_revalidate_drops_old_junk(tmp_path):
     st.upsert("PS5", Listing("wallapop", "b", "Consola PS5", 380, "u"), True)
     assert st.revalidate("PS5", lambda t, p: matches_product(L(t, p), ps5)) == 1
     assert [r[1] for r in st.comparables("PS5", 30)] == ["Consola PS5"]
+
+
+def test_full_products_with_extras_still_match():
+    assert matches_product(L("MacBook Air M1 8GB 256GB SSD con cargador", 520), _product("MacBook Air M1"))
+    assert matches_product(L("Meta Quest 3 128GB headset VR", 400), _product("Meta Quest 3"))
+    assert matches_product(L("Nintendo Switch OLED con cargador y dock", 230), _product("Nintendo Switch OLED"))
