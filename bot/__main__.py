@@ -133,7 +133,8 @@ class Bot:
     async def check_sold(self):
         """Comprueba anuncios antiguos: si han desaparecido, cuentan como venta (precio y rapidez)."""
         for platform, src in self.sources.items():
-            if time.time() < self.paused_until[platform]:
+            if platform not in self.cfg.get("enabled_platforms", self.sources) \
+                    or time.time() < self.paused_until[platform]:
                 continue
             for key in self.store.to_check(platform, self.cfg["sold_checks_per_cycle"]):
                 try:
@@ -152,7 +153,8 @@ class Bot:
 
     async def run(self):
         n = len(self.cfg["products"])
-        await self.tg.send(f"🤖 Bot de chollos arrancado. Vigilando {n} productos en Wallapop y Vinted.")
+        plats = " y ".join(p.capitalize() for p in self.cfg.get("enabled_platforms", self.sources))
+        await self.tg.send(f"🤖 Bot de chollos arrancado. Vigilando {n} productos en {plats}.")
         while True:
             start = time.time()
             products = list(self.cfg["products"])

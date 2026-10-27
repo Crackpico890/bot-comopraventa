@@ -104,6 +104,10 @@ docker compose down             # pararlo
 
 ## Avisos
 
+- **Vinted está desactivado de momento**: bloquea las peticiones que vienen de
+  servidores (responde 403). Se puede volver a activar en `enabled_platforms` de
+  `config.yaml` si algún día deja de bloquear.
+
 - Wallapop y Vinted no ofrecen una API pública: el bot usa la misma que usan sus webs.
   Eso va contra sus condiciones de uso. El bot va despacio y con pausas para no molestar
   ni ser bloqueado, pero si algún día cambian algo puede dejar de funcionar y habrá que

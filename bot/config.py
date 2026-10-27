@@ -11,8 +11,9 @@ def load(path: str = None) -> dict:
     cfg["telegram_chat_id"] = os.environ.get("TELEGRAM_CHAT_ID", "")
     cfg["db_path"] = os.environ.get("DB_PATH", "data/bot.db")
     cfg["dry_run"] = os.environ.get("DRY_RUN", "0") == "1"
+    enabled = cfg.get("enabled_platforms", ["wallapop", "vinted"])
     for p in cfg["products"]:
-        p.setdefault("platforms", ["wallapop", "vinted"])
+        p["platforms"] = [x for x in p.get("platforms", ["wallapop", "vinted"]) if x in enabled]
         p.setdefault("must_include", [])
         p.setdefault("exclude", [])
     return cfg

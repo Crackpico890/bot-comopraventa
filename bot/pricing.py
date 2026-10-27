@@ -19,6 +19,7 @@ TEXT_EXCLUDE = [
     "roto", "rota", "averiado", "averiada", "no funciona", "no enciende", "para piezas",
     "pantalla rota", "replica", "imitacion", "falso", "fake", "bloqueado", "bloqueada",
     "icloud", "leer descripcion", "sin probar", "a reparar", "para reparar",
+    "clon", "1:1", "aaa",
 ]
 
 
