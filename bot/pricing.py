@@ -2,6 +2,7 @@
 import re
 import statistics
 import unicodedata
+from functools import lru_cache
 from dataclasses import dataclass
 from typing import Iterable, Optional
 
@@ -19,6 +20,7 @@ TEXT_EXCLUDE = [
     "roto", "rota", "averiado", "averiada", "no funciona", "no enciende", "para piezas",
     "pantalla rota", "replica", "imitacion", "falso", "fake", "bloqueado", "bloqueada",
     "icloud", "leer descripcion", "sin probar", "a reparar", "para reparar",
+    "clon", "1:1", "aaa",
 ]
 
 
@@ -28,7 +30,44 @@ def normalize(text: str) -> str:
 
 
 def _contains(haystack: str, word: str) -> bool:
-    return re.search(r"\b" + re.escape(normalize(word)) + r"\b", haystack) is not None
+    # Admite el plural: "juego" también descarta "juegos", "mando" descarta "mandos".
+    return re.search(r"\b" + re.escape(normalize(word)) + r"(?:s|es)?\b", haystack) is not None
+
+
+# --- Variantes -------------------------------------------------------------
+# Solo se compara un anuncio con otros de la misma variante: un iPhone de 64 GB con
+# otros de 64 GB, una consola sola con otras solas (no con packs con juegos), algo
+# usado con otros usados (no con precintados).
+VARIANT_WORDS = {"pro", "max", "mini", "plus", "lite", "oled", "slim", "digital", "xl",
+                 "new", "ultra", "air", "cellular", "lte", "5g", "combo"}
+BUNDLE_WORDS = {"juego", "juegos", "pack", "lote", "mandos", "bundle", "accesorios", "kit",
+                "fly", "extras"}
+NEW_WORDS = {"precintado", "precintada", "nuevo", "nueva", "sellado", "sellada", "estrenar",
+             "abrir"}
+USED_PHRASES = ("como nuevo", "como nueva", "casi nuevo", "casi nueva", "practicamente nuevo",
+                "practicamente nueva", "seminuevo", "seminueva")
+STORAGE_RE = re.compile(r"\b(\d{2,4})\s?(gb|tb|g)\b")
+
+
+def product_base_words(product: dict) -> frozenset:
+    """Palabras que todos los anuncios del producto llevan: no sirven para distinguir variantes."""
+    text = normalize(" ".join(product.get("must_include", []) + [product.get("query", "")]))
+    return frozenset(re.findall(r"[a-z0-9]+", text.replace("|", " ")))
+
+
+@lru_cache(maxsize=50000)
+def signature(title: str, base: frozenset = frozenset()) -> frozenset:
+    t = normalize(title)
+    for phrase in USED_PHRASES:
+        t = t.replace(phrase, " ")
+    toks = {m.group(1) + ("tb" if m.group(2) == "tb" else "gb") for m in STORAGE_RE.finditer(t)}
+    words = set(re.findall(r"[a-z0-9]+", t))
+    toks |= (words & VARIANT_WORDS) - base
+    if words & BUNDLE_WORDS or "+" in t:
+        toks.add("pack")
+    if words & NEW_WORDS:
+        toks.add("nuevo")
+    return frozenset(toks)
 
 
 def matches_product(listing: Listing, product: dict) -> bool:
@@ -136,8 +175,10 @@ def evaluate(listing: Listing, product: dict, market: Market, cfg: dict,
         if sold[1] > rules["max_days_to_sell"]:
             return None   # se vende demasiado lento
     plat = fees[listing.platform]
-    shipping_in = plat["shipping"] if listing.shipping else 0.0
-    buy_cost = listing.price * (1 + plat["buy_fee_pct"]) + plat["buy_fee_fixed"] + shipping_in
+    if listing.shipping:
+        buy_cost = listing.price * (1 + plat["buy_fee_pct"]) + plat["buy_fee_fixed"] + plat["shipping"]
+    else:
+        buy_cost = listing.price   # en mano: sin envío ni comisión
     # Reventa: vendes al precio "resale" y descuentas comisión de venta y envío de venta.
     sell = fees["resale"]
     net_sale = resale * (1 - sell["sell_fee_pct"]) - sell["shipping"]
@@ -150,6 +191,8 @@ def evaluate(listing: Listing, product: dict, market: Market, cfg: dict,
     if buy_cost > cfg["budget"]:
         return None
     if profit < rules["min_profit_eur"] or profit_pct < rules["min_profit_pct"]:
+        return None
+    if discount_pct < rules.get("min_discount", 0):
         return None
 
     suspicious = discount_pct >= rules["suspicious_discount"]

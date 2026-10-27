@@ -66,6 +66,15 @@ class Store:
         self.db.commit()
         return False
 
+    def comparables(self, product: str, days: int) -> list:
+        """[(clave, título, precio)] de los anuncios válidos vistos en los últimos días."""
+        since = time.time() - days * 86400
+        cur = self.db.execute(
+            "SELECT key, title, price FROM listings WHERE product=? AND valid=1 AND last_seen>=?",
+            (product, since),
+        )
+        return cur.fetchall()
+
     def prices(self, product: str, days: int) -> list:
         since = time.time() - days * 86400
         cur = self.db.execute(
@@ -96,7 +105,7 @@ class Store:
         """Precio y días que tardaron en desaparecer los anuncios válidos (aprox. ventas)."""
         since = time.time() - days * 86400
         cur = self.db.execute(
-            "SELECT price, (gone_ts-first_seen)/86400.0 FROM listings "
+            "SELECT price, (gone_ts-first_seen)/86400.0, title FROM listings "
             "WHERE product=? AND valid=1 AND gone_ts IS NOT NULL AND gone_ts>=?",
             (product, since))
         return cur.fetchall()

@@ -63,3 +63,32 @@ def test_over_budget_ignored():
 def test_scam_warning():
     deal = evaluate(L("Nintendo Switch OLED", 60), SWITCH, market(), CFG)
     assert deal and deal.suspicious
+
+
+def test_small_discount_ignored():
+    # Mucho "beneficio" sobre el papel pero apenas más barato que el mercado: no es un chollazo.
+    cfg = dict(CFG, rules=dict(CFG["rules"], min_discount=0.35))
+    m = market()
+    assert evaluate(L("Nintendo Switch OLED", m.median * 0.7), SWITCH, m, cfg) is None
+
+
+def test_plural_exclude():
+    # "juego" en exclude también descarta "juegos" (packs que inflan el precio)
+    assert not matches_product(L("Nintendo Switch OLED + 3 juegos", 280), SWITCH)
+
+
+def test_variants_not_mixed():
+    from bot.pricing import product_base_words, signature
+    base = product_base_words(SWITCH)
+    plain = signature("Nintendo Switch OLED blanca", base)
+    assert signature("Switch OLED como nueva", base) == plain
+    assert signature("Switch OLED precintada", base) != plain
+    assert signature("Switch OLED + mandos", base) != plain
+    assert signature("iPhone 13 256GB") != signature("iPhone 13 128 GB")
+
+
+def test_config_numbers_as_text():
+    from bot import config
+    cfg = config.load("config.yaml")
+    for p in cfg["products"]:
+        assert all(isinstance(w, str) for w in p["must_include"] + p["exclude"])

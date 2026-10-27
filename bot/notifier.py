@@ -23,7 +23,7 @@ def format_deal(deal) -> str:
         + (" · con envío" if l.shipping else " · solo en mano"),
         "",
         f"🏷 <b>Precio:</b> {eur(l.price)}  (te cuesta {eur(deal.buy_cost)} con envío y comisiones)",
-        f"📊 <b>Se está vendiendo a:</b> {eur(m.median)}  (rango {eur(m.low)}–{eur(m.high)}, {m.samples} anuncios)",
+        f"📊 <b>Se está vendiendo a:</b> {eur(m.median)}  (rango {eur(m.low)}–{eur(m.high)}, {m.samples} anuncios iguales)",
     ]
     if deal.sold_median:
         lines.append(f"✅ <b>Vendidos de verdad:</b> {eur(deal.sold_median)} de media, "

@@ -22,6 +22,8 @@ daily_report_hour: 21    # hora del informe diario de mercado (hora de Madrid)
 
 rules:
   only_chollazos: true        # true = solo avisa de chollazos históricos
+  min_discount: 0.35          # al menos un 35 % más barato que la mediana del mercado
+  max_alerts_per_hour: 3      # freno de seguridad: nunca más de 3 avisos por hora
   min_samples: 20             # mínimo de anuncios comparables para fiarse del precio
   min_sold_samples: 5         # ventas detectadas para usar el precio real de venta
   max_days_to_sell: 10        # si tarda más en venderse, no interesa
@@ -50,6 +52,10 @@ fees:
 resale_percentile: 0.40
 historic_percentile: 0.10   # para ser CHOLLAZO tiene que estar en el 10 % más barato
 
+# Plataformas activas. Vinted bloquea las peticiones que vienen de servidores
+# (error 403), así que de momento está desactivada.
+enabled_platforms: [wallapop]
+
 # ============================================================
 #  Productos vigilados (reventa rápida y precio de mercado claro)
 #  must_include: palabras obligatorias en el título ("a|b" = una u otra)
@@ -62,177 +68,105 @@ products:
     query: nintendo switch oled
     must_include: [switch, oled]
     exclude: [lite, juego, juegos sueltos, dock solo, joycon, joy-con]
-    min_price: 70
+    min_price: 100
     max_price: 350
   - name: Nintendo Switch 2
     query: nintendo switch 2
     must_include: [switch 2]
     exclude: [lite, oled, juego, funda]
-    min_price: 150
+    min_price: 215
     max_price: 500
   - name: Nintendo Switch Lite
     query: nintendo switch lite
     must_include: [switch, lite]
     exclude: [juego]
-    min_price: 35
+    min_price: 50
     max_price: 200
   - name: PS5 Slim
     query: ps5 slim
     must_include: [ps5|playstation 5, slim]
     exclude: [mando, juego, dualsense, portal, lector]
-    min_price: 130
+    min_price: 185
     max_price: 500
   - name: PS5
     query: playstation 5 consola
     must_include: [ps5|playstation 5]
     exclude: [slim, pro, mando, juego, dualsense, portal, digital edition cover, lector]
-    min_price: 120
+    min_price: 170
     max_price: 450
   - name: Steam Deck OLED
     query: steam deck oled
     must_include: [steam deck, oled]
     exclude: [funda, dock]
-    min_price: 150
+    min_price: 215
     max_price: 600
-  - name: Steam Deck LCD
-    query: steam deck
-    must_include: [steam deck]
+  - name: Steam Deck LCD 512GB
+    query: steam deck 512gb
+    must_include: [steam deck, 512]
     exclude: [oled, funda, dock]
-    min_price: 90
+    min_price: 130
     max_price: 450
   - name: Xbox Series X
     query: xbox series x
     must_include: [series x]
     exclude: [mando, juego, series s]
-    min_price: 120
+    min_price: 170
     max_price: 450
   - name: Nintendo 3DS XL
     query: nintendo 3ds xl
     must_include: [3ds]
     exclude: [2ds, juego, juegos]
-    min_price: 35
+    min_price: 50
     max_price: 250
   - name: Game Boy Advance SP
     query: game boy advance sp
     must_include: [sp]
     exclude: [juego, cartucho]
-    min_price: 25
+    min_price: 35
     max_price: 200
-
-  # --- Apple ---
-  - name: AirPods Pro 2
-    query: airpods pro 2
-    must_include: [airpods pro]
-    exclude: [estuche solo, solo estuche, auricular izquierdo, auricular derecho, solo caja, replica]
-    min_price: 40
-    max_price: 250
   - name: iPhone 13 128GB
     query: iphone 13 128gb
     must_include: [iphone 13, 128]
     exclude: [mini, pro]
-    min_price: 90
-    max_price: 400
-  - name: iPhone 13 Pro
-    query: iphone 13 pro
-    must_include: [iphone 13 pro]
-    exclude: [max]
     min_price: 130
+    max_price: 400
+  - name: iPhone 13 Pro 128GB
+    query: iphone 13 pro 128gb
+    must_include: [iphone 13 pro, 128]
+    exclude: [max]
+    min_price: 185
     max_price: 500
   - name: iPhone 14
     query: iphone 14 128gb
-    must_include: [iphone 14]
+    must_include: [iphone 14, 128]
     exclude: [pro, plus]
-    min_price: 130
+    min_price: 185
     max_price: 500
   - name: iPad 9 generacion
     query: ipad 9 generacion
-    must_include: [ipad]
-    exclude: [pro, air, mini]
-    min_price: 70
-    max_price: 300
-  - name: Apple Watch Series 8
-    query: apple watch series 8
-    must_include: [watch, series 8|s8]
-    exclude: [correa]
-    min_price: 60
+    must_include: [ipad, 9|9a|novena]
+    exclude: [pro, air, mini, 10, 10a]
+    min_price: 100
     max_price: 300
   - name: MacBook Air M1
     query: macbook air m1
     must_include: [macbook air, m1]
-    min_price: 180
+    min_price: 255
     max_price: 650
-
-  # --- Electrónica y hogar ---
-  - name: Dyson V11
-    query: dyson v11
-    must_include: [v11]
-    exclude: [bateria, cepillo, accesorio]
-    min_price: 70
-    max_price: 400
-  - name: Thermomix TM6
-    query: thermomix tm6
-    must_include: [tm6]
-    exclude: [vaso, cuchilla, varoma, chip]
-    min_price: 210
-    max_price: 900
   - name: GoPro Hero 11
     query: gopro hero 11
     must_include: [gopro, 11]
-    min_price: 70
+    min_price: 100
     max_price: 400
-  - name: Garmin Forerunner 255
-    query: garmin forerunner 255
-    must_include: [forerunner, 255]
-    min_price: 60
-    max_price: 280
   - name: DJI Mini 3
     query: dji mini 3
     must_include: [mini 3]
-    exclude: [helice, bateria, mando]
-    min_price: 120
+    exclude: [pro, helice, bateria, mando]
+    min_price: 170
     max_price: 600
-  - name: Kindle Paperwhite
-    query: kindle paperwhite
-    must_include: [paperwhite]
-    min_price: 25
-    max_price: 160
-  - name: Sony WH-1000XM4
-    query: sony wh-1000xm4
-    must_include: [xm4]
-    min_price: 50
-    max_price: 250
   - name: Meta Quest 3
     query: meta quest 3
     must_include: [quest 3]
     exclude: [3s, correa, lentes]
-    min_price: 150
+    min_price: 215
     max_price: 550
-
-  # --- Coleccionismo (muy líquido en Vinted) ---
-  - name: Lego Star Wars sellado
-    query: lego star wars nuevo precintado
-    must_include: [lego, precintado|sellado|nuevo|sin abrir]
-    exclude: [minifigura, figura, compatible, montado]
-    min_price: 25
-    max_price: 400
-  - name: Pokemon caja sellada (ETB/booster box)
-    query: pokemon elite trainer box
-    must_include: [pokemon, etb|elite trainer|booster box|caja de sobres]
-    exclude: [vacia, abierta, proxy]
-    min_price: 25
-    max_price: 400
-
-  # --- Ropa y zapatillas (Vinted) ---
-  - name: Nike Dunk Low
-    query: nike dunk low
-    must_include: [dunk]
-    exclude: [nino, niño, replica]
-    min_price: 25
-    max_price: 200
-    platforms: [vinted, wallapop]
-  - name: The North Face Nuptse
-    query: north face nuptse
-    must_include: [nuptse]
-    exclude: [replica, niño]
-    min_price: 35
-    max_price: 300
