@@ -30,9 +30,13 @@ DEFECTS = [
     "piezas no originales", "bateria cambiada", "bateria no original",
     "drift", "no carga", "falla", "fallo", "a veces se", "desgaste",
     "marcas de uso", "marca de uso", "tara", "defecto", "desperfecto",
+    "ojo", "boton", "no va", "no funcionan", "funciona a veces", "aceptable", "aceptables",
+    "no responde", "se apaga", "se reinicia", "parpadea",
 ]
+# Símbolos con los que muchos vendedores marcan lo que no funciona ("Volumen ❌").
+DEFECT_SYMBOLS = ("❌", "✖", "✗", "⚠", "🚫", "⛔")
 NEGATIONS = {"sin", "ni", "ningun", "ninguna", "ninguno", "cero", "nunca", "no", "libre"}
-MIN_BATTERY = 85   # salud de batería mínima (%) cuando el anuncio la menciona
+MIN_BATTERY = 88   # salud de batería mínima (%) cuando el anuncio la menciona
 BATTERY_RES = [
     re.compile(r"bateria\D{0,25}?(\d{2,3})\s?%"),
     re.compile(r"(\d{2,3})\s?%\s?(?:de\s)?(?:salud\s)?(?:de\s)?bateria"),
@@ -154,7 +158,8 @@ def matches_product(listing: Listing, product: dict) -> bool:
     for word in TEXT_EXCLUDE:
         if _contains(full, word):
             return False
-    if defect_reason(full):
+    if defect_reason(full) or any(sym in (listing.title + listing.description)
+                                  for sym in DEFECT_SYMBOLS):
         return False
     if normalize(listing.extra.get("condition") or "") in BAD_CONDITIONS:
         return False

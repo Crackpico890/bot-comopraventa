@@ -185,3 +185,13 @@ def test_bad_condition_field():
     l = L("iPhone 13 128GB", 300)
     l.extra["condition"] = "has_given_it_all"
     assert not matches_product(l, ip)
+
+
+def test_defects_marked_with_symbols():
+    ip = _product("iPhone 13 128GB")
+    desc = "Ojo !!!\\nbotonde power ❌\\nVolumen +\\- ❌\\nBateria 85%"   # anuncio real
+    assert not matches_product(L("iPhone 13 128GB Negro", 130, desc), ip)
+    assert not matches_product(L("iPhone 13 128GB", 300, "Volumen ❌"), ip)
+    assert not matches_product(L("iPhone 13 128GB", 300, "En condiciones aceptables"), ip)
+    assert not matches_product(L("iPhone 13 128GB", 300, "Bateria 87%"), ip)
+    assert matches_product(L("iPhone 13 128GB", 300, "Todo funciona ✅ batería 90%"), ip)
