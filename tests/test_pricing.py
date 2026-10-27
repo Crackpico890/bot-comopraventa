@@ -92,3 +92,70 @@ def test_config_numbers_as_text():
     cfg = config.load("config.yaml")
     for p in cfg["products"]:
         assert all(isinstance(w, str) for w in p["must_include"] + p["exclude"])
+
+
+def _product(name):
+    from bot import config
+    return next(p for p in config.load("config.yaml")["products"] if p["name"] == name)
+
+
+def test_accessories_and_games_rejected():
+    # Anuncios reales que se colaron en la primera prueba
+    ps5, xsx = _product("PS5"), _product("Xbox Series X")
+    assert not matches_product(L("PlayStation VR2 (PS5)", 270), ps5)
+    assert not matches_product(L("Volante Gaming HORI RWA para PS5, PS4 y PC", 180), ps5)
+    assert not matches_product(L("Mouse P.I. for Hire Mouseburg Xbox Series X", 200), xsx)
+    assert not matches_product(
+        L("Tarjeta de expansión de almacenamiento Seagate 1TB para Xbox Series X|S", 175), xsx)
+    # y los de verdad siguen entrando
+    assert matches_product(L("Vendo consola PS5 con lector", 380), ps5)
+    assert matches_product(L("Consola Xbox Series X 1TB", 330), xsx)
+    assert matches_product(L("Sony PlayStation 5 edición estándar", 390), ps5)
+
+
+def test_storage_in_title():
+    ip = _product("iPhone 13 128GB")
+    assert matches_product(L("iPhone 13 128GB azul", 300), ip)
+    assert matches_product(L("Apple iPhone 13 128 GB", 300), ip)
+    sd = _product("Steam Deck LCD 512GB")
+    assert matches_product(L("Steam Deck 512GB con funda original", 300, ""), sd) is False  # funda en título
+    assert matches_product(L("Steam Deck 512GB", 300), sd)
+    from bot.pricing import product_base_words, signature
+    base = product_base_words(sd)
+    assert signature("Steam Deck 512GB", base) == signature("Steam Deck 512", base)
+
+
+def test_real_titles_still_match():
+    cases = {
+        "Game Boy Advance SP": ["Nintendo Game Boy Advance SP AGS-101", "Consola GBA SP plata"],
+        "Nintendo Switch OLED": ["Vendo Nintendo Switch OLED blanca"],
+        "DJI Mini 3": ["Dron DJI Mini 3 con mando"],
+        "Meta Quest 3": ["Gafas VR Meta Quest 3 128GB"],
+        "GoPro Hero 11": ["Cámara deportiva GoPro Hero 11 Black"],
+    }
+    for name, titles in cases.items():
+        p = _product(name)
+        for t in titles:
+            price = (p["min_price"] + p["max_price"]) / 2
+            assert matches_product(L(t, price), p), t
+
+
+def test_disc_drive_accessory():
+    ps5 = _product("PS5 Slim")
+    assert not matches_product(L("Lector de discos PS5 Slim", 190), ps5)
+    assert matches_product(L("PS5 Slim con lector y 2 mandos", 420), ps5)  # pack: otra variante
+    assert matches_product(L("PS5 Slim con lector", 420), ps5)
+
+
+def test_controller_alone_rejected_by_price():
+    assert not matches_product(L("Mando PS5 DualSense blanco", 45), _product("PS5"))
+
+
+def test_revalidate_drops_old_junk(tmp_path):
+    from bot.storage import Store
+    st = Store(str(tmp_path / "t.db"))
+    ps5 = _product("PS5")
+    st.upsert("PS5", Listing("wallapop", "a", "Volante HORI para PS5", 180, "u"), True)
+    st.upsert("PS5", Listing("wallapop", "b", "Consola PS5", 380, "u"), True)
+    assert st.revalidate("PS5", lambda t, p: matches_product(L(t, p), ps5)) == 1
+    assert [r[1] for r in st.comparables("PS5", 30)] == ["Consola PS5"]

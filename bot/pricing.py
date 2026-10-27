@@ -14,7 +14,15 @@ TITLE_EXCLUDE = [
     "cristal templado", "pegatina", "skin", "soporte", "cargador", "cable", "repuesto",
     "caja vacia", "solo caja", "sin consola", "piezas", "despiece", "alquilo", "alquiler",
     "reservado", "lote de juegos", "solo mando",
+    # accesorios y juegos que llevan el nombre de la consola en el título
+    "volante", "pedales", "vr2", "tarjeta de memoria", "tarjeta de expansion", "expansion",
+    "disco duro", "ssd", "auriculares", "cascos", "headset", "teclado", "raton", "amiibo",
+    "figura", "steelbook", "coleccionista", "dualsense", "joystick", "grip", "ventilador",
 ]
+# Palabras de relleno al principio del título ("Vendo consola ...").
+LEADING_FILLER = {"vendo", "se", "vende", "consola", "oferta", "urge", "urgente", "ocasion",
+                  "oportunidad", "rebajado", "rebajada", "rebaja", "apple", "nueva", "nuevo"}
+MAX_WORDS_BEFORE_NAME = 3
 # Si aparecen en el título o la descripción, el producto tiene un problema.
 TEXT_EXCLUDE = [
     "roto", "rota", "averiado", "averiada", "no funciona", "no enciende", "para piezas",
@@ -29,9 +37,29 @@ def normalize(text: str) -> str:
     return re.sub(r"\s+", " ", text.lower()).strip()
 
 
+def _pattern(word: str) -> str:
+    word = normalize(word)
+    # "128" también encaja con "128gb"/"128 GB"; "juego" también con "juegos".
+    suffix = r"(?:\s?(?:gb|tb|g))?" if word.isdigit() else r"(?:s|es)?"
+    return r"\b" + re.escape(word) + suffix + r"\b"
+
+
 def _contains(haystack: str, word: str) -> bool:
-    # Admite el plural: "juego" también descarta "juegos", "mando" descarta "mandos".
-    return re.search(r"\b" + re.escape(normalize(word)) + r"(?:s|es)?\b", haystack) is not None
+    return re.search(_pattern(word), haystack) is not None
+
+
+def _is_accessory_or_game(title: str, product: dict) -> bool:
+    """'Volante para PS5', 'Juego X Xbox Series X'... llevan el nombre pero no son el producto."""
+    names = product.get("must_include", [])[:1]
+    for alt in (names[0].split("|") if names else []):
+        if re.search(r"\b(?:para|for|compatible|compatibles|valido|apto)\s+(?:\S+\s+){0,3}?"
+                     + _pattern(alt), title):
+            return True
+        m = re.search(_pattern(alt), title)
+        if m:
+            before = [w for w in title[:m.start()].split() if w not in LEADING_FILLER]
+            return len(before) > MAX_WORDS_BEFORE_NAME
+    return False
 
 
 # --- Variantes -------------------------------------------------------------
@@ -60,7 +88,9 @@ def signature(title: str, base: frozenset = frozenset()) -> frozenset:
     t = normalize(title)
     for phrase in USED_PHRASES:
         t = t.replace(phrase, " ")
-    toks = {m.group(1) + ("tb" if m.group(2) == "tb" else "gb") for m in STORAGE_RE.finditer(t)}
+    # La capacidad que ya define el producto (p. ej. "128" en "iPhone 13 128GB") no distingue.
+    toks = {m.group(1) + ("tb" if m.group(2) == "tb" else "gb") for m in STORAGE_RE.finditer(t)
+            if m.group(1) not in base}
     words = set(re.findall(r"[a-z0-9]+", t))
     toks |= (words & VARIANT_WORDS) - base
     if words & BUNDLE_WORDS or "+" in t:
@@ -83,6 +113,8 @@ def matches_product(listing: Listing, product: dict) -> bool:
     for word in TITLE_EXCLUDE + product.get("exclude", []):
         if _contains(title, word):
             return False
+    if _is_accessory_or_game(title, product):
+        return False
     for word in TEXT_EXCLUDE:
         if _contains(full, word):
             return False
