@@ -32,6 +32,9 @@ DEFECTS = [
     "marcas de uso", "marca de uso", "tara", "defecto", "desperfecto",
     "ojo", "boton", "no va", "no funcionan", "funciona a veces", "aceptable", "aceptables",
     "no responde", "se apaga", "se reinicia", "parpadea",
+    "necesita", "cambiar la pantalla", "cambiar pantalla", "cambiar la bateria", "cambiar bateria",
+    "error", "no acepto devolucion", "no acepto devoluciones", "sin devolucion", "reparar",
+    "arreglar", "reparado", "reparada",
 ]
 # Símbolos con los que muchos vendedores marcan lo que no funciona ("Volumen ❌").
 DEFECT_SYMBOLS = ("❌", "✖", "✗", "⚠", "🚫", "⛔")

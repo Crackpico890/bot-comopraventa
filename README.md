@@ -20,6 +20,10 @@ beneficio limpio.
   - al menos 20 anuncios comparables, para que el precio de mercado sea fiable,
   - si ya hay ventas detectadas: que se venda en **10 días o menos**,
   - que el coste quepa en el presupuesto (400 €).
+- **Lee cada anuncio entero antes de avisarte**: descarta los que tienen defectos
+  (arañazos, batería por debajo del 88 %, "necesita cambiar la pantalla", ❌...). Si pones
+  una clave de la API de Claude en `.env`, además **una IA lee la descripción** como lo
+  haría una persona y descarta lo que no esté en perfecto estado (ver abajo).
 - **Avisa de posibles estafas** cuando el precio es demasiado bajo.
 - **Informe diario a las 21:00** con tendencias: qué se vende más rápido, qué sube o baja
   de precio, dónde hay más margen y qué tiene más anuncios nuevos.
@@ -85,6 +89,18 @@ reinicias el servidor.
 
 **Ojo:** los primeros días el bot está aprendiendo precios y ventas, así que es normal que
 no avise de nada. Cuanto más tiempo lleva encendido, mejores son sus cálculos.
+
+### 4. (Opcional, recomendado) Revisión con IA
+
+1. Crea una cuenta en <https://console.anthropic.com>, añade saldo (con 5 € sobra para
+   empezar) y crea una **API key** en *API Keys*.
+2. En el servidor: `nano .env` y pega la clave en `ANTHROPIC_API_KEY=` (no la compartas con
+   nadie ni la pegues en chats).
+3. `docker compose up -d` para que la coja.
+
+El mensaje de arranque dirá "Revisión de descripciones con IA: activada". Solo se revisan
+los anuncios que ya han pasado todos los filtros de precio, así que son pocos al día:
+cuesta 1 o 2 céntimos por anuncio revisado. Cada aviso dirá qué ha visto la IA.
 
 ### Comandos útiles
 

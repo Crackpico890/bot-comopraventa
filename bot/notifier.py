@@ -33,6 +33,10 @@ def format_deal(deal) -> str:
         f"🤑 <b>Le sacas:</b> +{eur(deal.profit)}  (+{deal.profit_pct:.0%}) limpio",
         f"📉 {deal.discount_pct:.0%} más barato que el mercado",
     ]
+    if l.extra.get("ai_checked"):
+        lines.append(f"🤖 <b>Revisado por IA:</b> {html.escape(l.extra['ai'])}")
+    elif "ai_checked" in l.extra:
+        lines.append("🤖 No se pudo revisar con IA: lee bien la descripción.")
     if deal.suspicious:
         lines += ["", "⚠️ <b>Ojo:</b> precio demasiado bajo, puede ser estafa. "
                       "Paga solo por la plataforma y revisa el perfil del vendedor."]

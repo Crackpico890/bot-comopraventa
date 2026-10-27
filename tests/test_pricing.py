@@ -195,3 +195,14 @@ def test_defects_marked_with_symbols():
     assert not matches_product(L("iPhone 13 128GB", 300, "En condiciones aceptables"), ip)
     assert not matches_product(L("iPhone 13 128GB", 300, "Bateria 87%"), ip)
     assert matches_product(L("iPhone 13 128GB", 300, "Todo funciona ✅ batería 90%"), ip)
+
+
+def test_needs_repair_described_in_words():
+    mac = _product("MacBook Air M1")
+    desc = ("MacBook Air M1 8GB 256GB. Necesita cambiar la pantalla, al encender sale un ERROR. "
+            "No acepto devolución, ya está indicado que necesita cambiarle la pantalla "
+            "y se envía restaurado a fábrica")
+    assert not matches_product(L("MacBook Air M1 256GB", 300, desc), mac)   # anuncio real
+    assert not matches_product(L("MacBook Air M1", 300, "Hay que cambiar la batería"), mac)
+    assert not matches_product(L("MacBook Air M1", 300, "Reparado en servicio no oficial"), mac)
+    assert matches_product(L("MacBook Air M1", 300, "Perfecto, nunca reparado, no necesita nada"), mac)

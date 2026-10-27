@@ -10,6 +10,7 @@ from zoneinfo import ZoneInfo
 import httpx
 
 from . import config as config_mod
+from .ai_check import AICheck
 from .models import Listing
 from .notifier import Telegram
 from .pricing import (defect_reason, evaluate, market_from_prices, matches_product, normalize,
@@ -48,6 +49,7 @@ class Bot:
         self.alert_times = []
         self.sold_stats = {name: [0, 0] for name in self.sources}   # [desaparecidos, comprobados]
         self.sold_disabled = set()
+        self.ai = AICheck.from_env()
 
     async def pause(self):
         lo, hi = self.cfg["request_delay_s"]
@@ -174,6 +176,14 @@ class Bot:
                      defect_reason(normalize(l.title + " " + l.description)) or "filtros")
             self.store.upsert(product["name"], l, False)
             return False
+        if self.ai:
+            verdict = await self.ai.review(l, product)
+            if verdict and not verdict[0]:
+                log.info("descartado por la IA: %s %s (%s)", l.title, l.url, verdict[1])
+                self.store.upsert(product["name"], l, False)
+                return False
+            l.extra["ai"] = verdict[1] if verdict else None
+            l.extra["ai_checked"] = verdict is not None
         return True
 
     async def check_sold(self):
@@ -219,7 +229,9 @@ class Bot:
         self.revalidate()
         n = len(self.cfg["products"])
         plats = " y ".join(p.capitalize() for p in self.cfg.get("enabled_platforms", self.sources))
-        await self.tg.send(f"🤖 Bot de chollos arrancado. Vigilando {n} productos en {plats}.")
+        ia = "activada" if self.ai else "desactivada (falta ANTHROPIC_API_KEY)"
+        await self.tg.send(f"🤖 Bot de chollos arrancado. Vigilando {n} productos en {plats}. "
+                           f"Revisión de descripciones con IA: {ia}.")
         while True:
             start = time.time()
             products = list(self.cfg["products"])
